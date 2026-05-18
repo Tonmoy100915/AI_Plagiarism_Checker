@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Checker - Scan Report</title>
+    <link href="[https://cdn.jsdelivr.net/npm/daisyui@4.10.2/dist/full.min.css](https://cdn.jsdelivr.net/npm/daisyui@4.10.2/dist/full.min.css)" rel="stylesheet" type="text/css" />
+    <script src="[https://cdn.tailwindcss.com](https://cdn.tailwindcss.com)"></script>
+</head>
+<body class="bg-base-200 min-h-screen p-6">
+
+    <div class="max-w-4xl mx-auto mt-10">
+        <div class="card bg-base-100 shadow-xl">
+            <div class="card-body">
+                <h2 class="card-title text-3xl font-bold text-center justify-center mb-6 border-b border-gray-700 pb-4">Scan Report</h2>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                    <div class="bg-red-900/20 p-6 rounded-xl border border-red-500/30 text-center shadow-md">
+                        <h3 class="text-xl text-red-400 mb-2 font-semibold">AI Generated</h3>
+                        <div class="text-4xl font-bold text-red-500 mb-4">{{ ai_score }}%</div>
+                        <progress class="progress progress-error w-full" value="{{ ai_score }}" max="100"></progress>
+                    </div>
+                    
+                    <div class="bg-success/20 p-6 rounded-xl border border-success/30 text-center shadow-md">
+                        <h3 class="text-xl text-success mb-2 font-semibold">Human Written</h3>
+                        <div class="text-4xl font-bold text-success mb-4">{{ human_score }}%</div>
+                        <progress class="progress progress-success w-full" value="{{ human_score }}" max="100"></progress>
+                    </div>
+
+                    <div class="bg-warning/20 p-6 rounded-xl border border-warning/30 text-center shadow-md">
+                        <h3 class="text-xl text-warning mb-2 font-semibold">Plagiarized Text</h3>
+                        <div class="text-4xl font-bold text-warning mb-4">{{ plagiarism_score }}%</div>
+                        <progress class="progress progress-warning w-full" value="{{ plagiarism_score }}" max="100"></progress>
+                    </div>
+
+                    <div class="bg-info/20 p-6 rounded-xl border border-info/30 text-center shadow-md">
+                        <h3 class="text-xl text-info mb-2 font-semibold">Original Content</h3>
+                        <div class="text-4xl font-bold text-info mb-4">{{ originality_score }}%</div>
+                        <progress class="progress progress-info w-full" value="{{ originality_score }}" max="100"></progress>
+                    </div>
+                </div>
+
+                <h3 class="text-xl font-bold mb-4 text-gray-300">Detailed Sentence Analysis:</h3>
+                <div class="bg-base-300 p-5 rounded-xl border border-gray-800 max-h-96 overflow-y-auto leading-relaxed mb-6">
+                    {% for sentence in analyzed_sentences %}
+                        {% if sentence.is_ai and sentence.is_plagiarized %}
+                            <span class="bg-purple-500/30 text-purple-200 border-b-2 border-purple-500 px-1 rounded mx-0.5" title="Both AI & Plagiarized">{{ sentence.text }}</span>
+                        {% elif sentence.is_ai %}
+                            <span class="bg-red-500/20 text-red-300 border-b-2 border-red-500 px-1 rounded mx-0.5" title="AI Detected">{{ sentence.text }}</span>
+                        {% elif sentence.is_plagiarized %}
+                            <span class="bg-warning/20 text-warning border-b-2 border-warning px-1 rounded mx-0.5" title="Plagiarism Detected">{{ sentence.text }}</span>
+                        {% else %}
+                            <span class="text-gray-300">{{ sentence.text }}</span>
+                        {% endif %}
+                    {% endfor %}
+                </div>
+
+                <div class="flex flex-wrap gap-4 text-xs mb-6 justify-center bg-base-200 p-3 rounded-lg">
+                    <div class="flex items-center gap-1"><div class="w-3 h-3 bg-red-500/50 rounded"></div> <span class="text-gray-400">AI Generated</span></div>
+                    <div class="flex items-center gap-1"><div class="w-3 h-3 bg-yellow-500/50 rounded"></div> <span class="text-gray-400">Plagiarized</span></div>
+                    <div class="flex items-center gap-1"><div class="w-3 h-3 bg-purple-500/50 rounded"></div> <span class="text-gray-400">AI + Plagiarized</span></div>
+                    <div class="flex items-center gap-1"><span class="text-gray-300">Normal Text</span> <span class="text-gray-400">(Original)</span></div>
+                </div>
+                
+                <div class="card-actions justify-center border-t border-gray-700 pt-6 gap-4">
+                    <a href="/" class="btn btn-primary w-1/2 max-w-xs">Start New Scan</a>
+                    <a href="/history" class="btn btn-outline btn-secondary w-1/2 max-w-xs">View History Dashboard</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</body>
+</html>

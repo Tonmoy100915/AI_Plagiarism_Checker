@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scan Results Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@4.10.2/dist/full.min.css" rel="stylesheet" type="text/css" />
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-base-200 min-h-screen p-6">
+
+    <div class="max-w-4xl mx-auto mt-10">
+        
+        <div class="card bg-base-100 shadow-xl border border-gray-800">
+            <div class="card-body">
+                <h2 class="card-title text-2xl text-primary border-b border-gray-700 pb-4">
+                    Scan Analysis Result
+                </h2>
+                <p class="text-sm text-gray-400 mt-1"><b>File Name:</b> {{ filename }}</p>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
+                    
+                    <div class="stats shadow bg-base-300 border border-gray-800">
+                        <div class="stat text-center">
+                            <div class="stat-title font-semibold text-gray-400">AI Generated</div>
+                            <div class="stat-value text-error mt-2">{{ ai_score }}%</div>
+                            <div class="stat-desc mt-2">
+                                {% if ai_score > 50 %}
+                                    <span class="badge badge-error gap-1">High AI Content</span>
+                                {% else %}
+                                    <span class="badge badge-success gap-1">Safe / Human</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="stats shadow bg-base-300 border border-gray-800">
+                        <div class="stat text-center">
+                            <div class="stat-title font-semibold text-gray-400">Human Written</div>
+                            <div class="stat-value text-success mt-2">{{ human_score }}%</div>
+                            <div class="stat-desc mt-2">
+                                {% if human_score > 50 %}
+                                    <span class="badge badge-success gap-1">Highly Original</span>
+                                {% else %}
+                                    <span class="badge badge-warning gap-1">Low Originality</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="stats shadow bg-base-300 border border-gray-800">
+                        <div class="stat text-center">
+                            <div class="stat-title font-semibold text-gray-400">Plagiarism Score</div>
+                            <div class="stat-value text-warning mt-2">{{ plagiarism_score }}%</div>
+                            <div class="stat-desc mt-2">
+                                {% if plagiarism_score > 30 %}
+                                    <span class="badge badge-warning gap-1">Match Found</span>
+                                {% else %}
+                                    <span class="badge badge-success gap-1">Unique Content</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+
+                <div class="bg-base-300 border border-gray-800 rounded-xl p-6 mt-8 text-center">
+                    <div class="flex flex-col items-center justify-center space-y-3">
+                        <div class="p-3 bg-primary/10 rounded-full text-primary">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                            </svg>
+                        </div>
+                        <h3 class="text-lg font-bold">Highlighted PDF Report is Ready!</h3>
+                        <p class="text-sm text-gray-400 max-w-md">
+                            Your full document has been processed. Download the customized PDF report to view line-by-line smart highlighting for AI detection and plagiarism tracking.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="card-actions justify-between items-center border-t border-gray-800 pt-6 mt-6">
+                    <a href="/" class="btn btn-outline btn-sm">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
+                        Scan Another File
+                    </a>
+                    
+                    <form action="/download_report" method="POST">
+                        <input type="hidden" name="extracted_text" value="{{ text }}">
+                        <input type="hidden" name="filename" value="{{ filename }}">
+                        <input type="hidden" name="ai_score" value="{{ ai_score }}">
+                        <input type="hidden" name="human_score" value="{{ human_score }}">
+                        <input type="hidden" name="plagiarism_score" value="{{ plagiarism_score }}">
+                        <input type="hidden" name="ai_indices" value="{{ ai_indices }}">
+                        <input type="hidden" name="plagiarized_indices" value="{{ plagiarized_indices }}">
+                        
+                        <button type="submit" class="btn btn-primary px-6 btn-md font-semibold">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                            </svg>
+                            Download Highlighted PDF
+                        </button>
+                    </form>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+</body>
+</html>

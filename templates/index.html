@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI & Plagiarism Checker</title>
+    <!-- Tailwind CSS & DaisyUI CDN -->
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@4.10.2/dist/full.min.css" rel="stylesheet" type="text/css" />
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-base-200 min-h-screen flex items-center justify-center">
+
+    <div class="card w-full max-w-lg bg-base-100 shadow-xl">
+        <div class="card-body items-center text-center">
+            <h2 class="card-title text-3xl font-bold text-primary mb-2">Smart Checker</h2>
+            <p class="text-gray-400 mb-6">Upload your document (TXT, PDF, or DOCX) to check for AI generation and Plagiarism.</p>
+            
+            <form action="/" method="POST" enctype="multipart/form-data" class="w-full">
+                <div class="form-control w-full">
+                    <!-- File Input -->
+                    <input type="file" name="file" class="file-input file-input-bordered file-input-primary w-full" accept=".txt,.pdf,.docx" required />
+                </div>
+                
+                <div class="card-actions justify-center mt-6">
+                    <button type="submit" class="btn btn-primary w-full">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
+                        Scan Document
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+</body>
+</html>
