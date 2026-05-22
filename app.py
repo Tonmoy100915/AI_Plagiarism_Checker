@@ -91,8 +91,9 @@ def extract_text(file_path, filename):
     return text.strip()
 
 def check_via_rapidapi(text_to_scan):
-    # ট্র্যাপ ২ ফিক্স: সঠিক সেন্ট্রাল MCP গেটওয়ে এন্ডপয়েন্ট ও ইউআরএল ম্যাপিং
-    url = "[https://plagiarism-checker-and-auto-citation-generator-multi-lingual.p.rapidapi.com/plagiarism](https://plagiarism-checker-and-auto-citation-generator-multi-lingual.p.rapidapi.com/plagiarism)"
+    # ভুল ইউআরএল ফরম্যাটটি পরিবর্তন করে এই ক্লিন ইউআরএলটি দিন
+    url = "https://plagiarism-checker-and-auto-citation-generator-multi-lingual.p.rapidapi.com/plagiarism"
+    
     payload = {
         "text": text_to_scan,
         "language": "en"
