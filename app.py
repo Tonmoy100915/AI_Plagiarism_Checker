@@ -300,4 +300,6 @@ def download_report():
         return f"<h3 style='color:red; text-align:center;'>PDF Generation Error: {str(e)}</h3>"
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    # অনলাইন ক্লাউডের ডাইনামিক পোর্ট অ্যাসাইন করার জন্য
+    port = int(os.environ.get('PORT', 5000))
+    app.run(host='0.0.0.0', port=port, debug=False)
