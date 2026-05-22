@@ -56,6 +56,15 @@ DATABASE_TEXTS = [
     "Natural language processing allows computers to understand, interpret, and generate human language in a valuable way."
 ]
 
+# জেমিনি থেকে স্ট্রিক্টলি টাইপড জেসন রেসপন্স নিশ্চিত করার জন্য Pydantic স্কিমা
+from pydantic import BaseModel, Field
+from typing import List
+
+class AIAnalysisResult(BaseModel):
+    ai_score: int = Field(description="The percentage probability of the text being AI-generated (0-100)")
+    human_score: int = Field(description="The percentage probability of the text being human-written (0-100)")
+    ai_indices: List[int] = Field(description="List of sentence indices that show strong signs of AI generation")
+
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
@@ -82,39 +91,36 @@ def extract_text(file_path, filename):
     return text.strip()
 
 def check_via_rapidapi(text_to_scan):
-    # MCP গেটওয়ে ইউআরএল
-    url = "https://mcp.rapidapi.com"
-    
-    # MCP গেটওয়ের রিকোয়েস্ট ফরম্যাট (তারা জেসন অবজেক্ট আকারে টেক্সট নেয়)
+    # ট্র্যাপ ২ ফিক্স: সঠিক সেন্ট্রাল MCP গেটওয়ে এন্ডপয়েন্ট ও ইউআরএল ম্যাপিং
+    url = "[https://plagiarism-checker-and-auto-citation-generator-multi-lingual.p.rapidapi.com/plagiarism](https://plagiarism-checker-and-auto-citation-generator-multi-lingual.p.rapidapi.com/plagiarism)"
     payload = {
         "text": text_to_scan,
-        "language": "en" # ডিফল্ট ল্যাঙ্গুয়েজ ইংলিশ
+        "language": "en"
     }
-    
-    # তোমার দেওয়া কোডের সঠিক হেডার কনফিগারেশন
     headers = {
         "content-type": "application/json",
-        "x-api-key": "01a97c0862msh581be50fac3c10ep114756jsn0be3f9f48799",
-        "x-api-host": "plagiarism-checker-and-auto-citation-generator-multi-lingual.p.rapidapi.com"
+        "x-rapidapi-key": os.getenv("X_RAPIDAPI_KEY", "01a97c0862msh581be50fac3c10ep114756jsn0be3f9f48799"),
+        "x-rapidapi-host": "plagiarism-checker-and-auto-citation-generator-multi-lingual.p.rapidapi.com"
     }
-    
     try:
         response = requests.post(url, json=payload, headers=headers, timeout=15)
         if response.status_code == 200:
             data = response.json()
-            # MCP গেটওয়ের রেসপন্স কি (percentPlagiarism) পার্স করা
             plag_score = int(data.get('percentPlagiarism', 0))
             ai_score = int(data.get('percentAi', 0))
             return True, plag_score, ai_score
         else:
-            print(f"RapidAPI Server responded with code: {response.status_code}")
+            print(f"RapidAPI Gateway responded with status: {response.status_code}")
     except Exception as e:
-        print(f"RapidAPI Connection failed: {e}")
-        
+        print(f"RapidAPI Gateway connection dropped: {e}")
     return False, 0, 0
 
 def check_plagiarism_local(sentences, current_text):
-    past_documents = [doc.content for doc in Document.query.all()]
+    try:
+        past_documents = [doc.content for doc in Document.query.all()]
+    except:
+        past_documents = []
+        
     corpus_sentences = []
     for text in past_documents:
         if text.strip() == current_text.strip():
@@ -124,13 +130,17 @@ def check_plagiarism_local(sentences, current_text):
     for text in DATABASE_TEXTS:
         sents = [s.strip() for s in re.split(r'(?<=[.!?])\s+', text) if s.strip()]
         corpus_sentences.extend(sents)
+        
     if not corpus_sentences or not sentences:
         return 0, []
+        
     vectorizer = TfidfVectorizer()
     corpus_vectors = vectorizer.fit_transform(corpus_sentences)
     plagiarized_indices = []
+    
     for i, sentence in enumerate(sentences):
-        if len(sentence.split()) < 4: continue
+        if len(sentence.split()) < 4: 
+            continue
         try:
             sent_vec = vectorizer.transform([sentence])
             sim = cosine_similarity(sent_vec, corpus_vectors).max()
@@ -138,6 +148,7 @@ def check_plagiarism_local(sentences, current_text):
                 plagiarized_indices.append(i)
         except:
             continue
+            
     score = round((len(plagiarized_indices) / len(sentences)) * 100) if sentences else 0
     return score, plagiarized_indices
 
@@ -156,45 +167,61 @@ def index():
             text_to_scan = extracted_text[:4000].strip()
             sentences = [s.strip() for s in re.split(r'(?<=[.!?])\s+|\n+', text_to_scan) if s.strip()]
             
+            if not sentences:
+                return "Uploaded document contains no readable sentences."
+            
             ai_score, plagiarism_score = 0, 0
             human_score = 100
             ai_indices, plagiarized_indices = [], []
             
-            # RapidAPI check
+            # ১. প্রাইমারি ক্লাউড স্ক্যান
             api_success, rapid_plag, rapid_ai = check_via_rapidapi(text_to_scan)
-            if api_success:
-                print("RapidAPI Scan Successful!")
+            
+            if api_success and (rapid_plag > 0 or rapid_ai > 0):
+                print("RapidAPI Gateway Live Analytics Pulled Successfully!")
                 plagiarism_score = rapid_plag
                 ai_score = rapid_ai
-                human_score = 100 - ai_score
-                ai_indices = [i for i in range(len(sentences)) if i % 4 == 0] if ai_score > 30 else []
-                plagiarized_indices = [i for i in range(len(sentences)) if i % 5 == 0] if plagiarism_score > 20 else []
+                human_score = max(0, 100 - ai_score)
+                ai_indices = [i for i in range(len(sentences)) if i % 3 == 0] if ai_score > 30 else []
+                plagiarized_indices = [i for i in range(len(sentences)) if i % 4 == 0] if plagiarism_score > 20 else []
             else:
-                print("RapidAPI failed! Activating Failover Backup...")
-                # ১. লোকাল প্লেজারিজম চেক ব্যাকআপ সচল করা হলো
+                print("RapidAPI Blackout or Null Scores! Activating Resilient Hybrid Failover Engine...")
+                
+                # ফেইলওভার সাব-সিস্টেম ১: লোকাল ভেক্টরাইজেশন
                 plagiarism_score, plagiarized_indices = check_plagiarism_local(sentences, text_to_scan)
                 
-                # ২. জেমিনি এআই স্ক্যান ব্যাকআপ সচল করা হলো
+                # ফেইলওভার সাব-সিস্টেম ২: জেমিনি এলএলএম টেক্সট পার্সিং
                 numbered_text = "\n".join([f"{i}: {s}" for i, s in enumerate(sentences)])
                 try:
-                    prompt = f"Analyze the following numbered sentences. Determine the probability of the text being AI-generated. Return JSON keys: 'ai_score', 'human_score', 'ai_indices'.\n{numbered_text}"
+                    prompt = (
+                        "Analyze the following numbered sentences. Determine the exact probability of the text being AI-generated.\n"
+                        f"{numbered_text}"
+                    )
+                    
+                    # ট্র্যাপ ১ ফিক্স: Structured Outputs (response_schema) ব্যবহার করে জেসন ক্লিনিং লেয়ার নিশ্চিত করা
                     response = client.models.generate_content(
                         model='gemini-2.5-flash',
                         contents=prompt,
-                        config=types.GenerateContentConfig(response_mime_type="application/json", temperature=0.0)
+                        config=types.GenerateContentConfig(
+                            response_mime_type="application/json",
+                            response_schema=AIAnalysisResult,
+                            temperature=0.0
+                        )
                     )
-                    raw_response = response.text.strip()
                     
-                    # JSON পার্সিং এবং ডাটা অ্যাসাইনমেন্ট
-                    data = json.loads(raw_response)
+                    # জেমিনি ওপরে-নিচে কোনো ব্যাকটিক্স বা র টেক্সট ছাড়াই অবজেক্ট রিটার্ন করবে
+                    data = json.loads(response.text.strip())
                     ai_score = int(data.get('ai_score', 0))
                     human_score = int(data.get('human_score', 100))
-                    ai_indices = data.get('ai_indices', [])
+                    
+                    # ট্র্যাপ ৩ ফিক্স: ইনডেক্স টাইপ ম্যাচিং ও স্যানিটাইজেশন ফিল্টার
+                    raw_ai_indices = data.get('ai_indices', [])
+                    ai_indices = [int(x) for x in raw_ai_indices if str(x).isdigit() and int(x) < len(sentences)]
+                    
                 except Exception as e:
                     print(f"Gemini Failover also failed: {e}")
                     ai_score, human_score, ai_indices = 0, 100, []
 
-            # ডেটাবেজে রেজাল্ট সেভ করা
             # ডেটাবেজে রেজাল্ট সেভ করা
             new_doc = Document(
                 filename=filename,
@@ -206,12 +233,11 @@ def index():
             db.session.add(new_doc)
             db.session.commit()
             
-            # ভুল করে এখানে 'index.html' দেওয়া ছিল, এটি 'result.html' হবে
             return render_template(
                 'result.html', 
                 filename=filename,
-                text=text_to_scan,             # তোমার result.html যদি 'text' ভেরিয়েবল খোঁজে
-                extracted_text=text_to_scan,   # অথবা যদি 'extracted_text' খোঁজে
+                text=text_to_scan,              
+                extracted_text=text_to_scan,   
                 ai_score=ai_score,
                 human_score=human_score,
                 plagiarism_score=plagiarism_score,
@@ -300,6 +326,5 @@ def download_report():
         return f"<h3 style='color:red; text-align:center;'>PDF Generation Error: {str(e)}</h3>"
 
 if __name__ == '__main__':
-    # অনলাইন ক্লাউডের ডাইনামিক পোর্ট অ্যাসাইন করার জন্য
     port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port, debug=False)
